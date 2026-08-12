@@ -1,8 +1,8 @@
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using WebMinRouteGroup.Data;
 
 namespace IntegrationTests.Helpers;
@@ -10,9 +10,9 @@ namespace IntegrationTests.Helpers;
 public class TestWebApplicationFactory<TProgram>
     : WebApplicationFactory<TProgram> where TProgram : class
 {
-    protected override IHost CreateHost(IHostBuilder builder)
+    protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.ConfigureHostConfiguration(config =>
+        builder.ConfigureAppConfiguration(config =>
         {
             config.AddInMemoryCollection(new Dictionary<string, string?> { { "EmailAddress", "test1@Contoso.com" } });
         });
@@ -32,7 +32,5 @@ public class TestWebApplicationFactory<TProgram>
                 options.UseSqlite($"Data Source={Path.Join(path, "WebMinRouteGroup_tests.db")}");
             });
         });
-
-        return base.CreateHost(builder);
     }
 }
