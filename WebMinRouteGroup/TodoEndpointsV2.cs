@@ -71,7 +71,7 @@ public static class TodoEndpointsV2
 
         await todoService.Add(newTodo);
 
-        return TypedResults.Created($"/todos/v1/{newTodo.Id}", newTodo);
+        return TypedResults.Created($"/todos/v2/{newTodo.Id}", newTodo);
     }
 
     // update todo

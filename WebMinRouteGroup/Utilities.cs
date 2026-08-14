@@ -10,7 +10,8 @@ public static class Utilities
 
         if (string.IsNullOrEmpty(td.Title))
         {
-            errors.TryAdd("todo.name.errors", new[] { "Name is empty" });
+            errors.TryAdd("todo.name.errors", new[] { "Name is empty", "Name length < 3" });
+            return errors;
         }
 
         if (td.Title.Length < 3)
