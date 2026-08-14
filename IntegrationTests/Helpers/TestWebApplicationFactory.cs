@@ -28,8 +28,7 @@ public class TestWebApplicationFactory<TProgram>
 
             services.AddDbContext<TodoGroupDbContext>(options =>
             {
-                var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-                options.UseSqlite($"Data Source={Path.Join(path, "WebMinRouteGroup_tests.db")}");
+                options.UseSqlite("DataSource=:memory:");
             });
         });
     }

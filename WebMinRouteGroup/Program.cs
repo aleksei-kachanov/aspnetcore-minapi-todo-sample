@@ -11,8 +11,8 @@ builder.Services.AddSingleton<IEmailService, EmailService>();
 
 builder.Services.AddDbContext<TodoGroupDbContext>(options =>
 {
-    var path = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    options.UseSqlite($"Data Source={Path.Join(path, "WebMinRouteGroup.db")}");
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    options.UseSqlite(connectionString);
 });
 
 var app = builder.Build();
