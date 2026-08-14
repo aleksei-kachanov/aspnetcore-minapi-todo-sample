@@ -38,9 +38,11 @@ public class TestWebApplicationFactory<TProgram>
             });
 
             // Ensure schema is created before any test request hits the DB.
+            // EnsureDeleted first so startup's MigrateAsync doesn't conflict.
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TodoGroupDbContext>();
+            db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
         });
     }
