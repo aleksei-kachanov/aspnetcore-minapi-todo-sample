@@ -1,0 +1,2 @@
+build_command: dotnet build MinApiTestsSample.sln
+verification_command: dotnet test MinApiTestsSample.sln --no-build --logger trx --results-directory TestResults/
