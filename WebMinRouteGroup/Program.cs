@@ -19,7 +19,13 @@ var app = builder.Build();
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetService<TodoGroupDbContext>();
-await db!.Database.MigrateAsync();
+// Only run migrations for real (non-in-memory) databases.
+// In-memory SQLite used by integration tests creates its own schema via EnsureCreated.
+if (db != null && db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory"
+    && !db.Database.GetConnectionString()!.Contains(":memory:"))
+{
+    await db.Database.MigrateAsync();
+}
 
 // todoV1 endpoints
 app.MapGroup("/todos/v1")

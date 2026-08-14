@@ -37,12 +37,12 @@ public class TestWebApplicationFactory<TProgram>
                 options.UseSqlite(keepAliveConnection);
             });
 
-            // Ensure schema is created before any test request hits the DB.
-            // EnsureDeleted first so startup's MigrateAsync doesn't conflict.
+            // Ensure schema is created for the in-memory test DB.
+            // Program.cs startup skips MigrateAsync for :memory: connections,
+            // so we create the schema here before any test request arrives.
             var sp = services.BuildServiceProvider();
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TodoGroupDbContext>();
-            db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
         });
     }
