@@ -26,10 +26,22 @@ public class TestWebApplicationFactory<TProgram>
                 services.Remove(descriptor);
             }
 
+            // Use a shared in-memory SQLite connection so the schema persists
+            // for the lifetime of the test host. Without a shared connection,
+            // each DbContext opens a new :memory: file that disappears immediately.
+            var keepAliveConnection = new Microsoft.Data.Sqlite.SqliteConnection("DataSource=:memory:");
+            keepAliveConnection.Open();
+
             services.AddDbContext<TodoGroupDbContext>(options =>
             {
-                options.UseSqlite("DataSource=:memory:");
+                options.UseSqlite(keepAliveConnection);
             });
+
+            // Ensure schema is created before any test request hits the DB.
+            var sp = services.BuildServiceProvider();
+            using var scope = sp.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<TodoGroupDbContext>();
+            db.Database.EnsureCreated();
         });
     }
 }
