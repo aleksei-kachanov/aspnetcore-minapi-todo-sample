@@ -19,7 +19,7 @@ var app = builder.Build();
 
 using var scope = app.Services.CreateScope();
 var db = scope.ServiceProvider.GetService<TodoGroupDbContext>();
-db?.Database.MigrateAsync();
+await db.Database.MigrateAsync();
 
 // todoV1 endpoints
 app.MapGroup("/todos/v1")
