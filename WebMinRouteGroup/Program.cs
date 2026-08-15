@@ -1,4 +1,7 @@
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using WebMinRouteGroup;
 using WebMinRouteGroup.Data;
@@ -10,12 +13,35 @@ builder.Services.AddOpenApi();
 builder.Services.AddTransient<ITodoService, TodoService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
-
 builder.Services.AddDbContext<TodoGroupDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseSqlite(connectionString);
 });
+
+// JWT Bearer authentication
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("JWT signing key (Jwt:Key) is not configured.");
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "WebMinRouteGroup";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "WebMinRouteGroup";
+
+builder.Services
+    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateIssuerSigningKey = true,
+            ValidateLifetime = true,
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -34,6 +60,9 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
     app.MapScalarApiReference("/scalar");
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // health check endpoint
 app.MapGroup("")

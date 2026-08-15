@@ -14,6 +14,7 @@ public static class TodoEndpointsV2
         group.MapGet("/{id}", GetTodo);
 
         group.MapPost("/", CreateTodo)
+            .RequireAuthorization()
             .AddEndpointFilter(async (efiContext, next) =>
             {
                 var param = efiContext.GetArgument<TodoDto>(0);
@@ -29,6 +30,7 @@ public static class TodoEndpointsV2
             });
 
         group.MapPut("/{id}", UpdateTodo)
+            .RequireAuthorization()
             .AddEndpointFilter(async (efiContext, next) =>
             {
                 var param = efiContext.GetArgument<UpdateTodoDto>(0);
@@ -43,7 +45,8 @@ public static class TodoEndpointsV2
                 return await next(efiContext);
             });
 
-        group.MapDelete("/{id}", DeleteTodo);
+        group.MapDelete("/{id}", DeleteTodo)
+            .RequireAuthorization();
 
         return group;
     }
