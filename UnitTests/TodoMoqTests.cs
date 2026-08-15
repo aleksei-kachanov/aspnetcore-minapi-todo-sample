@@ -188,9 +188,8 @@ public class TodoMoqTests
             IsDone = false
         };
 
-        var updatedTodo = new Todo
+        var updatedTodo = new TodoDto
         {
-            Id = 1,
             Title = "Updated test title",
             IsDone = true
         };
@@ -200,12 +199,12 @@ public class TodoMoqTests
         mock.Setup(m => m.Find(It.Is<int>(id => id == 1)))
             .ReturnsAsync(existingTodo);
 
-        mock.Setup(m => m.Update(It.Is<Todo>(t => t.Id == updatedTodo.Id && t.Description == updatedTodo.Description && t.IsDone == updatedTodo.IsDone)))
+        mock.Setup(m => m.Update(It.Is<Todo>(t => t.Id == existingTodo.Id && t.IsDone == updatedTodo.IsDone)))
             .Callback<Todo>(todo => existingTodo = todo)
             .Returns(Task.CompletedTask);
 
         //Act
-        var result = await TodoEndpointsV2.UpdateTodo(updatedTodo, mock.Object);
+        var result = await TodoEndpointsV2.UpdateTodo(updatedTodo, 1, mock.Object);
 
         //Assert
         Assert.IsType<Results<Created<Todo>, NotFound>>(result);
