@@ -10,6 +10,7 @@ public static class TodoEndpointsV2
     {
         group.MapGet("/", GetAllTodos);
         group.MapGet("/incompleted", GetAllIncompletedTodos);
+        group.MapGet("/overdue", GetOverdueTodos);
         group.MapGet("/{id}", GetTodo);
 
         group.MapPost("/", CreateTodo)
@@ -46,6 +47,13 @@ public static class TodoEndpointsV2
         return TypedResults.Ok(todos);
     }
 
+    // get overdue todos
+    public static async Task<Ok<List<Todo>>> GetOverdueTodos(ITodoService todoService)
+    {
+        var todos = await todoService.GetOverdueTodos();
+        return TypedResults.Ok(todos);
+    }
+
     // get todo by id
     public static async Task<Results<Ok<Todo>, NotFound>> GetTodo(int id, ITodoService todoService)
     {
@@ -62,11 +70,16 @@ public static class TodoEndpointsV2
     // create todo
     public static async Task<Created<Todo>> CreateTodo(TodoDto todo, ITodoService todoService)
     {
+        var now = DateTime.UtcNow;
         var newTodo = new Todo
         {
             Title = todo.Title,
             Description = todo.Description,
-            IsDone = todo.IsDone
+            IsDone = todo.IsDone,
+            DueDate = todo.DueDate,
+            Priority = todo.Priority,
+            CreatedAt = now,
+            UpdatedAt = now
         };
 
         await todoService.Add(newTodo);
@@ -75,19 +88,22 @@ public static class TodoEndpointsV2
     }
 
     // update todo
-    public static async Task<Results<Created<Todo>, NotFound>> UpdateTodo(Todo todo, ITodoService todoService)
+    public static async Task<Results<Created<Todo>, NotFound>> UpdateTodo(int id, UpdateTodoDto todo, ITodoService todoService)
     {
-        var existingTodo = await todoService.Find(todo.Id);
+        var existingTodo = await todoService.Find(id);
 
         if (existingTodo != null)
         {
             existingTodo.Title = todo.Title;
             existingTodo.Description = todo.Description;
             existingTodo.IsDone = todo.IsDone;
+            existingTodo.DueDate = todo.DueDate;
+            existingTodo.Priority = todo.Priority;
+            existingTodo.UpdatedAt = DateTime.UtcNow;
 
             await todoService.Update(existingTodo);
 
-            return TypedResults.Created($"/todos/v1/{existingTodo.Id}", existingTodo);
+            return TypedResults.Created($"/todos/v2/{existingTodo.Id}", existingTodo);
         }
 
         return TypedResults.NotFound();

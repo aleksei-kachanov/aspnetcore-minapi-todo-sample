@@ -62,4 +62,12 @@ public class TodoService : ITodoService
     {
         return _dbContext.Todos.Where(t => t.IsDone == false).ToListAsync();
     }
+
+    public Task<List<Todo>> GetOverdueTodos()
+    {
+        var now = DateTime.UtcNow;
+        return _dbContext.Todos
+            .Where(t => t.DueDate < now && t.IsDone == false)
+            .ToListAsync();
+    }
 }
