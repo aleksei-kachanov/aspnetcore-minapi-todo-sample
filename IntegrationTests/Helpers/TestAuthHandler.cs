@@ -35,3 +35,14 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthenticationSchemeOpt
         return Task.FromResult(result);
     }
 }
+
+
+public class UnauthenticatedTestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+{
+    public UnauthenticatedTestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options,
+        ILoggerFactory logger, UrlEncoder encoder)
+        : base(options, logger, encoder) { }
+
+    protected override Task<AuthenticateResult> HandleAuthenticateAsync()
+        => Task.FromResult(AuthenticateResult.Fail("Unauthenticated"));
+}
