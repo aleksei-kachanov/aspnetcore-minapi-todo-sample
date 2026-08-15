@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using WebMinRouteGroup.Data;
 
@@ -10,9 +11,11 @@ using WebMinRouteGroup.Data;
 namespace WebMinRouteGroup.Migrations
 {
     [DbContext(typeof(TodoGroupDbContext))]
-    partial class TodoGroupDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260815005026_AddDueDatePriorityTimestamps")]
+    partial class AddDueDatePriorityTimestamps
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "7.0.0-preview.7.22376.2");

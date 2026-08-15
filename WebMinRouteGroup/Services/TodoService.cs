@@ -30,6 +30,10 @@ public class TodoService : ITodoService
 
     public async Task Add(Todo todo)
     {
+        var now = DateTime.UtcNow;
+        todo.CreatedAt = now;
+        todo.UpdatedAt = now;
+
         await _dbContext.Todos.AddAsync(todo);
 
         if (await _dbContext.SaveChangesAsync() > 0)
@@ -48,6 +52,7 @@ public class TodoService : ITodoService
 
     public async Task Update(Todo todo)
     {
+        todo.UpdatedAt = DateTime.UtcNow;
         _dbContext.Todos.Update(todo);
         await _dbContext.SaveChangesAsync();
     }
@@ -61,5 +66,13 @@ public class TodoService : ITodoService
     public Task<List<Todo>> GetIncompleteTodos()
     {
         return _dbContext.Todos.Where(t => t.IsDone == false).ToListAsync();
+    }
+
+    public Task<List<Todo>> GetOverdueTodos()
+    {
+        var now = DateTime.UtcNow;
+        return _dbContext.Todos
+            .Where(t => t.DueDate < now && t.IsDone == false)
+            .ToListAsync();
     }
 }
