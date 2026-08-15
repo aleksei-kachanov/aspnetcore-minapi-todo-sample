@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Scalar.AspNetCore;
 using WebMinRouteGroup;
 using WebMinRouteGroup.Data;
 using WebMinRouteGroup.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddOpenApi();
 builder.Services.AddTransient<ITodoService, TodoService>();
 builder.Services.AddSingleton<IEmailService, EmailService>();
 
@@ -25,6 +27,12 @@ if (db != null && db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InM
     && !db.Database.GetConnectionString()!.Contains(":memory:"))
 {
     await db.Database.MigrateAsync();
+}
+
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.MapScalarApiReference("/scalar");
 }
 
 // health check endpoint
