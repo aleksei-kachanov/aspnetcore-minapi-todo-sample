@@ -56,16 +56,11 @@ public static class TodoEndpointsV1
     // create todo
     public static async Task<Created<Todo>> CreateTodo(TodoDto todo, TodoGroupDbContext database)
     {
-        var now = DateTime.UtcNow;
         var newTodo = new Todo
         {
             Title = todo.Title,
             Description = todo.Description,
-            IsDone = todo.IsDone,
-            DueDate = todo.DueDate,
-            Priority = todo.Priority,
-            CreatedAt = now,
-            UpdatedAt = now
+            IsDone = todo.IsDone
         };
 
         await database.Todos.AddAsync(newTodo);
@@ -75,18 +70,15 @@ public static class TodoEndpointsV1
     }
 
     // update todo
-    public static async Task<Results<Created<Todo>, NotFound>> UpdateTodo(int id, UpdateTodoDto todo, TodoGroupDbContext database)
+    public static async Task<Results<Created<Todo>, NotFound>> UpdateTodo(Todo todo, TodoGroupDbContext database)
     {
-        var existingTodo = await database.Todos.FindAsync(id);
+        var existingTodo = await database.Todos.FindAsync(todo.Id);
 
         if (existingTodo != null)
         {
             existingTodo.Title = todo.Title;
             existingTodo.Description = todo.Description;
             existingTodo.IsDone = todo.IsDone;
-            existingTodo.DueDate = todo.DueDate;
-            existingTodo.Priority = todo.Priority;
-            existingTodo.UpdatedAt = DateTime.UtcNow;
 
             await database.SaveChangesAsync();
 

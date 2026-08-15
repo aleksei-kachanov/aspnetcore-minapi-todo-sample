@@ -8,8 +8,6 @@ public interface ITodoService
 
     Task<List<Todo>> GetIncompleteTodos();
 
-    Task<List<Todo>> GetOverdueTodos();
-
     ValueTask<Todo?> Find(int id);
 
     Task Add(Todo todo);
