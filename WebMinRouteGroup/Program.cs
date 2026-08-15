@@ -27,6 +27,11 @@ if (db != null && db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InM
     await db.Database.MigrateAsync();
 }
 
+// health check endpoint
+app.MapGroup("")
+    .MapHealthApi()
+    .WithTags("Health");
+
 // todoV1 endpoints
 app.MapGroup("/todos/v1")
     .MapTodosApiV1()
