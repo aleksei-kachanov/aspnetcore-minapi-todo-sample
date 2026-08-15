@@ -28,7 +28,21 @@ public static class TodoEndpointsV2
                 return await next(efiContext);
             });
 
-        group.MapPut("/{id}", UpdateTodo);
+        group.MapPut("/{id}", UpdateTodo)
+            .AddEndpointFilter(async (efiContext, next) =>
+            {
+                var param = efiContext.GetArgument<UpdateTodoDto>(0);
+
+                var validationErrors = Utilities.IsValid(param);
+
+                if (validationErrors.Any())
+                {
+                    return Results.ValidationProblem(validationErrors);
+                }
+
+                return await next(efiContext);
+            });
+
         group.MapDelete("/{id}", DeleteTodo);
 
         return group;
@@ -145,7 +159,7 @@ public static class TodoEndpointsV2
     }
 
     // update todo
-    public static async Task<Results<Created<Todo>, NotFound>> UpdateTodo(TodoDto todo, int id, ITodoService todoService)
+    public static async Task<Results<Ok<Todo>, NotFound>> UpdateTodo(UpdateTodoDto todo, int id, ITodoService todoService)
     {
         var existingTodo = await todoService.Find(id);
 
@@ -159,7 +173,7 @@ public static class TodoEndpointsV2
 
             await todoService.Update(existingTodo);
 
-            return TypedResults.Created($"/todos/v2/{existingTodo.Id}", existingTodo);
+            return TypedResults.Ok(existingTodo);
         }
 
         return TypedResults.NotFound();
