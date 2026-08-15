@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -14,7 +16,13 @@ public class TestWebApplicationFactory<TProgram>
     {
         builder.ConfigureAppConfiguration(config =>
         {
-            config.AddInMemoryCollection(new Dictionary<string, string?> { { "EmailAddress", "test1@Contoso.com" } });
+            config.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                { "EmailAddress", "test1@Contoso.com" },
+                { "Jwt:Key", "test-secret-key-that-is-long-enough-for-hmac-sha256" },
+                { "Jwt:Issuer", "TestIssuer" },
+                { "Jwt:Audience", "TestAudience" },
+            });
         });
 
         builder.ConfigureServices(services =>
@@ -44,6 +52,15 @@ public class TestWebApplicationFactory<TProgram>
             using var scope = sp.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<TodoGroupDbContext>();
             db.Database.EnsureCreated();
+        });
+
+        // Replace JWT bearer with a test auth handler so integration tests
+        // don't need real tokens. All requests via the default client are
+        // auto-authenticated as a test user.
+        builder.ConfigureTestServices(services =>
+        {
+            services.AddAuthentication(defaultScheme: "Test")
+                .AddScheme<TestAuthenticationSchemeOptions, TestAuthHandler>("Test", _ => { });
         });
     }
 }
