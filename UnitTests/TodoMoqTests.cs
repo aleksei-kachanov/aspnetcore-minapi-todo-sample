@@ -188,7 +188,7 @@ public class TodoMoqTests
             IsDone = false
         };
 
-        var updatedTodo = new TodoDto
+        var updatedTodo = new UpdateTodoDto
         {
             Title = "Updated test title",
             IsDone = true
@@ -207,12 +207,11 @@ public class TodoMoqTests
         var result = await TodoEndpointsV2.UpdateTodo(updatedTodo, 1, mock.Object);
 
         //Assert
-        Assert.IsType<Results<Created<Todo>, NotFound>>(result);
+        Assert.IsType<Results<Ok<Todo>, NotFound>>(result);
 
-        var createdResult = (Created<Todo>) result.Result;
+        var okResult = (Ok<Todo>) result.Result;
 
-        Assert.NotNull(createdResult);
-        Assert.NotNull(createdResult.Location);
+        Assert.NotNull(okResult);
 
         Assert.Equal("Updated test title", existingTodo.Title);
         Assert.True(existingTodo.IsDone);
