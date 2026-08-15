@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using WebMinRouteGroup.Data;
 using WebMinRouteGroup.Services;
+using System.Text.Json;
 
 namespace IntegrationTests;
 
@@ -71,12 +72,14 @@ public class TodoEndpointsV2Tests : IClassFixture<TestWebApplicationFactory<Prog
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        var todos = await client.GetFromJsonAsync<List<Todo>>("/todos/v2");
+        var pagedResult = await client.GetFromJsonAsync<PagedResult<Todo>>("/todos/v2",
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-        Assert.NotNull(todos);
-        Assert.Single(todos);
+        Assert.NotNull(pagedResult);
+        Assert.NotNull(pagedResult.Items);
+        Assert.Single(pagedResult.Items);
 
-        Assert.Collection(todos, (todo) =>
+        Assert.Collection(pagedResult.Items, (todo) =>
         {
             Assert.Equal("Test title", todo.Title);
             Assert.Equal("Test description", todo.Description);

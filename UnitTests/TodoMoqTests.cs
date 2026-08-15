@@ -34,31 +34,31 @@ public class TodoMoqTests
         // Arrange
         var mock = new Mock<ITodoService>();
 
-        mock.Setup(m => m.GetAll())
-            .ReturnsAsync(new List<Todo> {
-                new Todo
-                {
-                    Id = 1,
-                    Title = "Test title 1",
-                    IsDone = false
-                },
-                new Todo
-                {
-                    Id = 2,
-                    Title = "Test title 2",
-                    IsDone = true
-                }
+        var items = new List<Todo>
+        {
+            new Todo { Id = 1, Title = "Test title 1", IsDone = false },
+            new Todo { Id = 2, Title = "Test title 2", IsDone = true }
+        };
+
+        mock.Setup(m => m.GetPaged(It.IsAny<WebMinRouteGroup.Data.TodoQueryParams>()))
+            .ReturnsAsync(new WebMinRouteGroup.Data.PagedResult<Todo>
+            {
+                Items = items,
+                Total = items.Count,
+                Page = 1,
+                Size = 20
             });
 
         // Act
         var result = await TodoEndpointsV2.GetAllTodos(mock.Object);
 
         //Assert
-        Assert.IsType<Ok<List<Todo>>>(result);
+        Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.Results<Ok<WebMinRouteGroup.Data.PagedResult<Todo>>, BadRequest<string>>>(result);
 
-        Assert.NotNull(result.Value);
-        Assert.NotEmpty(result.Value);
-        Assert.Collection(result.Value, todo1 =>
+        var okResult = (Ok<WebMinRouteGroup.Data.PagedResult<Todo>>) result.Result;
+        Assert.NotNull(okResult.Value);
+        Assert.NotEmpty(okResult.Value.Items);
+        Assert.Collection(okResult.Value.Items, todo1 =>
         {
             Assert.Equal(1, todo1.Id);
             Assert.Equal("Test title 1", todo1.Title);
