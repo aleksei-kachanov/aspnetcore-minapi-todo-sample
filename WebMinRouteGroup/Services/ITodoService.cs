@@ -10,6 +10,8 @@ public interface ITodoService
 
     Task<List<Todo>> GetOverdueTodos();
 
+    Task<PagedResult<Todo>> GetPaged(TodoQueryParams queryParams);
+
     ValueTask<Todo?> Find(int id);
 
     Task Add(Todo todo);

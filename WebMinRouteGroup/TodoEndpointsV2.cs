@@ -34,11 +34,71 @@ public static class TodoEndpointsV2
         return group;
     }
 
-    // get all todos
-    public static async Task<Ok<List<Todo>>> GetAllTodos(ITodoService todoService)
+    // get all todos with optional filter / sort / pagination
+    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>>> GetAllTodos(
+        ITodoService todoService,
+        bool? isDone = null,
+        string? priority = null,
+        DateTime? dueBefore = null,
+        DateTime? dueAfter = null,
+        string? sortBy = null,
+        string? order = null,
+        int page = 1,
+        int size = 20)
     {
-        var todos = await todoService.GetAll();
-        return TypedResults.Ok(todos);
+        // Validate sortBy
+        if (!string.IsNullOrEmpty(sortBy))
+        {
+            var validSortFields = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+            {
+                "dueDate", "priority", "createdAt", "title"
+            };
+            if (!validSortFields.Contains(sortBy))
+            {
+                return TypedResults.BadRequest($"Invalid sortBy value '{sortBy}'. Must be one of: dueDate, priority, createdAt, title.");
+            }
+        }
+
+        // Validate order
+        if (!string.IsNullOrEmpty(order) &&
+            !string.Equals(order, "asc", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(order, "desc", StringComparison.OrdinalIgnoreCase))
+        {
+            return TypedResults.BadRequest($"Invalid order value '{order}'. Must be 'asc' or 'desc'.");
+        }
+
+        // Validate page/size
+        if (page < 1)
+        {
+            return TypedResults.BadRequest("Page must be >= 1.");
+        }
+
+        if (size < 1 || size > 100)
+        {
+            return TypedResults.BadRequest("Size must be between 1 and 100.");
+        }
+
+        var queryParams = new TodoQueryParams
+        {
+            IsDone = isDone,
+            Priority = priority,
+            DueBefore = dueBefore,
+            DueAfter = dueAfter,
+            SortBy = sortBy,
+            Order = order,
+            Page = page,
+            Size = size
+        };
+
+        try
+        {
+            var result = await todoService.GetPaged(queryParams);
+            return TypedResults.Ok(result);
+        }
+        catch (ArgumentException ex)
+        {
+            return TypedResults.BadRequest(ex.Message);
+        }
     }
 
     public static async Task<Ok<List<Todo>>> GetAllIncompletedTodos(ITodoService todoService)
