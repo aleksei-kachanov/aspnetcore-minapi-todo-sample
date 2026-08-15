@@ -151,15 +151,14 @@ public class TodoInMemoryTests
 
         await context.SaveChangesAsync();
 
-        var updatedTodo = new Todo
+        var updatedTodo = new UpdateTodoDto
         {
-            Id = 1,
             Title = "Updated test title",
             IsDone = true
         };
 
         //Act
-        var result = await TodoEndpointsV1.UpdateTodo(updatedTodo, context);
+        var result = await TodoEndpointsV1.UpdateTodo(1, updatedTodo, context);
 
         //Assert
         Assert.IsType<Results<Created<Todo>, NotFound>>(result);
