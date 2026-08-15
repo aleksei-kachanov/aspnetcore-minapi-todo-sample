@@ -23,6 +23,7 @@ public class TestAuthHandler : AuthenticationHandler<TestAuthenticationSchemeOpt
     {
         var claims = new[]
         {
+            new Claim(ClaimTypes.NameIdentifier, "test-user-id"),
             new Claim("admin", Options.IsAdmin)
         };
 

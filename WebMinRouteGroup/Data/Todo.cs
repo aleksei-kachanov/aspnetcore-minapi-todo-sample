@@ -24,4 +24,10 @@ public class Todo
     public Priority Priority { get; set; } = Priority.Medium;
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+
+    /// <summary>
+    /// The user ID (sub claim from JWT) who owns this todo.
+    /// </summary>
+    [MaxLength(450)]
+    public string OwnerId { get; set; } = string.Empty;
 }

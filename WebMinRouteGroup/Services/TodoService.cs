@@ -23,9 +23,11 @@ public class TodoService : ITodoService
         return await _dbContext.Todos.FindAsync(id);
     }
 
-    public async Task<List<Todo>> GetAll()
+    public async Task<List<Todo>> GetAll(string ownerId)
     {
-        return await _dbContext.Todos.ToListAsync();
+        return await _dbContext.Todos
+            .Where(t => t.OwnerId == ownerId)
+            .ToListAsync();
     }
 
     public async Task Add(Todo todo)
@@ -63,26 +65,29 @@ public class TodoService : ITodoService
         await _dbContext.SaveChangesAsync();
     }
 
-    public Task<List<Todo>> GetIncompleteTodos()
+    public Task<List<Todo>> GetIncompleteTodos(string ownerId)
     {
-        return _dbContext.Todos.Where(t => t.IsDone == false).ToListAsync();
-    }
-
-    public Task<List<Todo>> GetOverdueTodos()
-    {
-        var now = DateTime.UtcNow;
         return _dbContext.Todos
-            .Where(t => t.DueDate < now && t.IsDone == false)
+            .Where(t => t.OwnerId == ownerId && t.IsDone == false)
             .ToListAsync();
     }
 
-    public async Task<PagedResult<Todo>> GetPaged(TodoQueryParams queryParams)
+    public Task<List<Todo>> GetOverdueTodos(string ownerId)
+    {
+        var now = DateTime.UtcNow;
+        return _dbContext.Todos
+            .Where(t => t.OwnerId == ownerId && t.DueDate < now && t.IsDone == false)
+            .ToListAsync();
+    }
+
+    public async Task<PagedResult<Todo>> GetPaged(TodoQueryParams queryParams, string ownerId)
     {
         // Clamp page size: minimum 1, maximum 100
         var size = Math.Clamp(queryParams.Size, 1, 100);
         var page = Math.Max(queryParams.Page, 1);
 
-        IQueryable<Todo> query = _dbContext.Todos;
+        // Always scope to the current user
+        IQueryable<Todo> query = _dbContext.Todos.Where(t => t.OwnerId == ownerId);
 
         // --- Filtering ---
         if (queryParams.IsDone.HasValue)

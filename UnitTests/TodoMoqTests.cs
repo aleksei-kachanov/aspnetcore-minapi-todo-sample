@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Moq;
 using WebMinRouteGroup;
@@ -8,6 +9,15 @@ namespace UnitTests;
 
 public class TodoMoqTests
 {
+    // A helper that creates a ClaimsPrincipal with a known NameIdentifier so the
+    // V2 endpoint handlers can resolve ownerId without returning Forbid().
+    private static ClaimsPrincipal AuthenticatedUser(string userId = "test-user-id")
+    {
+        var claims = new[] { new Claim(ClaimTypes.NameIdentifier, userId) };
+        var identity = new ClaimsIdentity(claims, "Test");
+        return new ClaimsPrincipal(identity);
+    }
+
     [Fact]
     public async Task GetTodoReturnsNotFoundIfNotExists()
     {
@@ -18,10 +28,10 @@ public class TodoMoqTests
             .ReturnsAsync((Todo?)null);
 
         // Act
-        var result = await TodoEndpointsV2.GetTodo(1, mock.Object);
+        var result = await TodoEndpointsV2.GetTodo(1, AuthenticatedUser(), mock.Object);
 
         //Assert
-        Assert.IsType<Results<Ok<Todo>, NotFound>>(result);
+        Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
         var notFoundResult = (NotFound) result.Result;
 
@@ -33,15 +43,16 @@ public class TodoMoqTests
     {
         // Arrange
         var mock = new Mock<ITodoService>();
+        var ownerId = "test-user-id";
 
         var items = new List<Todo>
         {
-            new Todo { Id = 1, Title = "Test title 1", IsDone = false },
-            new Todo { Id = 2, Title = "Test title 2", IsDone = true }
+            new Todo { Id = 1, Title = "Test title 1", IsDone = false, OwnerId = ownerId },
+            new Todo { Id = 2, Title = "Test title 2", IsDone = true,  OwnerId = ownerId }
         };
 
-        mock.Setup(m => m.GetPaged(It.IsAny<WebMinRouteGroup.Data.TodoQueryParams>()))
-            .ReturnsAsync(new WebMinRouteGroup.Data.PagedResult<Todo>
+        mock.Setup(m => m.GetPaged(It.IsAny<TodoQueryParams>(), ownerId))
+            .ReturnsAsync(new PagedResult<Todo>
             {
                 Items = items,
                 Total = items.Count,
@@ -50,12 +61,12 @@ public class TodoMoqTests
             });
 
         // Act
-        var result = await TodoEndpointsV2.GetAllTodos(mock.Object);
+        var result = await TodoEndpointsV2.GetAllTodos(AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Microsoft.AspNetCore.Http.HttpResults.Results<Ok<WebMinRouteGroup.Data.PagedResult<Todo>>, BadRequest<string>>>(result);
+        Assert.IsType<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ForbidHttpResult>>(result);
 
-        var okResult = (Ok<WebMinRouteGroup.Data.PagedResult<Todo>>) result.Result;
+        var okResult = (Ok<PagedResult<Todo>>) result.Result;
         Assert.NotNull(okResult.Value);
         Assert.NotEmpty(okResult.Value.Items);
         Assert.Collection(okResult.Value.Items, todo1 =>
@@ -76,32 +87,24 @@ public class TodoMoqTests
     {
         // Arrange
         var mock = new Mock<ITodoService>();
+        var ownerId = "test-user-id";
 
-        mock.Setup(m => m.GetIncompleteTodos())
+        mock.Setup(m => m.GetIncompleteTodos(ownerId))
             .ReturnsAsync(new List<Todo> {
-                new Todo
-                {
-                    Id = 1,
-                    Title = "Test title 1",
-                    IsDone = false
-                },
-                new Todo
-                {
-                    Id = 2,
-                    Title = "Test title 2",
-                    IsDone = false
-                }
+                new Todo { Id = 1, Title = "Test title 1", IsDone = false, OwnerId = ownerId },
+                new Todo { Id = 2, Title = "Test title 2", IsDone = false, OwnerId = ownerId }
             });
 
         // Act
-        var result = await TodoEndpointsV2.GetAllIncompletedTodos(mock.Object);
+        var result = await TodoEndpointsV2.GetAllIncompletedTodos(AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Ok<List<Todo>>>(result);
+        Assert.IsType<Results<Ok<List<Todo>>, ForbidHttpResult>>(result);
 
-        Assert.NotNull(result.Value);
-        Assert.NotEmpty(result.Value);
-        Assert.Collection(result.Value, todo1 =>
+        var okResult = (Ok<List<Todo>>) result.Result;
+        Assert.NotNull(okResult.Value);
+        Assert.NotEmpty(okResult.Value);
+        Assert.Collection(okResult.Value, todo1 =>
         {
             Assert.Equal(1, todo1.Id);
             Assert.Equal("Test title 1", todo1.Title);
@@ -119,20 +122,16 @@ public class TodoMoqTests
     {
         // Arrange
         var mock = new Mock<ITodoService>();
+        var ownerId = "test-user-id";
 
         mock.Setup(m => m.Find(It.Is<int>(id => id == 1)))
-            .ReturnsAsync(new Todo
-            {
-                Id = 1,
-                Title = "Test title",
-                IsDone = false
-            });
+            .ReturnsAsync(new Todo { Id = 1, Title = "Test title", IsDone = false, OwnerId = ownerId });
 
         // Act
-        var result = await TodoEndpointsV2.GetTodo(1, mock.Object);
+        var result = await TodoEndpointsV2.GetTodo(1, AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Results<Ok<Todo>, NotFound>>(result);
+        Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
         var okResult = (Ok<Todo>) result.Result;
 
@@ -145,6 +144,7 @@ public class TodoMoqTests
     {
         //Arrange
         var todos = new List<Todo>();
+        var ownerId = "test-user-id";
 
         var newTodo = new TodoDto
         {
@@ -160,13 +160,15 @@ public class TodoMoqTests
             .Returns(Task.CompletedTask);
 
         //Act
-        var result = await TodoEndpointsV2.CreateTodo(newTodo, mock.Object);
+        var result = await TodoEndpointsV2.CreateTodo(newTodo, AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Created<Todo>>(result);
+        Assert.IsType<Results<Created<Todo>, ForbidHttpResult>>(result);
 
-        Assert.NotNull(result);
-        Assert.NotNull(result.Location);
+        var createdResult = (Created<Todo>) result.Result;
+
+        Assert.NotNull(createdResult);
+        Assert.NotNull(createdResult.Location);
 
         Assert.NotEmpty(todos);
         Assert.Collection(todos, todo =>
@@ -181,12 +183,8 @@ public class TodoMoqTests
     public async Task UpdateTodoUpdatesTodoInDatabase()
     {
         //Arrange
-        var existingTodo = new Todo
-        {
-            Id = 1,
-            Title = "Exiting test title",
-            IsDone = false
-        };
+        var ownerId = "test-user-id";
+        var existingTodo = new Todo { Id = 1, Title = "Exiting test title", IsDone = false, OwnerId = ownerId };
 
         var updatedTodo = new UpdateTodoDto
         {
@@ -204,10 +202,10 @@ public class TodoMoqTests
             .Returns(Task.CompletedTask);
 
         //Act
-        var result = await TodoEndpointsV2.UpdateTodo(updatedTodo, 1, mock.Object);
+        var result = await TodoEndpointsV2.UpdateTodo(updatedTodo, 1, AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Results<Ok<Todo>, NotFound>>(result);
+        Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
         var okResult = (Ok<Todo>) result.Result;
 
@@ -221,13 +219,8 @@ public class TodoMoqTests
     public async Task DeleteTodoDeletesTodoInDatabase()
     {
         //Arrange
-        var existingTodo = new Todo
-        {
-            Id = 1,
-            Title = "Test title 1",
-            IsDone = false
-        };
-
+        var ownerId = "test-user-id";
+        var existingTodo = new Todo { Id = 1, Title = "Test title 1", IsDone = false, OwnerId = ownerId };
         var todos = new List<Todo> { existingTodo };
 
         var mock = new Mock<ITodoService>();
@@ -240,11 +233,11 @@ public class TodoMoqTests
             .Returns(Task.CompletedTask);
 
         //Act
-        var result = await TodoEndpointsV2.DeleteTodo(existingTodo.Id, mock.Object);
+        var result = await TodoEndpointsV2.DeleteTodo(existingTodo.Id, AuthenticatedUser(ownerId), mock.Object);
 
         //Assert
-        Assert.IsType<Results<NoContent, NotFound>>(result);
-        
+        Assert.IsType<Results<NoContent, NotFound, ForbidHttpResult>>(result);
+
         var noContentResult = (NoContent) result.Result;
 
         Assert.NotNull(noContentResult);

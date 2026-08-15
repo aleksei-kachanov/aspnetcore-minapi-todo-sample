@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Http.HttpResults;
 using WebMinRouteGroup.Data;
 using WebMinRouteGroup.Services;
@@ -8,10 +9,10 @@ public static class TodoEndpointsV2
 {
     public static RouteGroupBuilder MapTodosApiV2(this RouteGroupBuilder group)
     {
-        group.MapGet("/", GetAllTodos);
-        group.MapGet("/incompleted", GetAllIncompletedTodos);
-        group.MapGet("/overdue", GetOverdueTodos);
-        group.MapGet("/{id}", GetTodo);
+        group.MapGet("/", GetAllTodos).RequireAuthorization();
+        group.MapGet("/incompleted", GetAllIncompletedTodos).RequireAuthorization();
+        group.MapGet("/overdue", GetOverdueTodos).RequireAuthorization();
+        group.MapGet("/{id}", GetTodo).RequireAuthorization();
 
         group.MapPost("/", CreateTodo)
             .RequireAuthorization()
@@ -51,8 +52,9 @@ public static class TodoEndpointsV2
         return group;
     }
 
-    // get all todos with optional filter / sort / pagination
-    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>>> GetAllTodos(
+    // get all todos with optional filter / sort / pagination — scoped to authenticated user
+    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ForbidHttpResult>> GetAllTodos(
+        ClaimsPrincipal user,
         ITodoService todoService,
         bool? isDone = null,
         string? priority = null,
@@ -63,6 +65,14 @@ public static class TodoEndpointsV2
         int page = 1,
         int size = 20)
     {
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(ownerId))
+        {
+            return TypedResults.Forbid();
+        }
+
         // Validate sortBy
         if (!string.IsNullOrEmpty(sortBy))
         {
@@ -109,7 +119,7 @@ public static class TodoEndpointsV2
 
         try
         {
-            var result = await todoService.GetPaged(queryParams);
+            var result = await todoService.GetPaged(queryParams, ownerId);
             return TypedResults.Ok(result);
         }
         catch (ArgumentException ex)
@@ -118,42 +128,90 @@ public static class TodoEndpointsV2
         }
     }
 
-    public static async Task<Ok<List<Todo>>> GetAllIncompletedTodos(ITodoService todoService)
+    public static async Task<Results<Ok<List<Todo>>, ForbidHttpResult>> GetAllIncompletedTodos(
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
-        var todos = await todoService.GetIncompleteTodos();
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(ownerId))
+        {
+            return TypedResults.Forbid();
+        }
+
+        var todos = await todoService.GetIncompleteTodos(ownerId);
         return TypedResults.Ok(todos);
     }
 
     // get overdue todos
-    public static async Task<Ok<List<Todo>>> GetOverdueTodos(ITodoService todoService)
+    public static async Task<Results<Ok<List<Todo>>, ForbidHttpResult>> GetOverdueTodos(
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
-        var todos = await todoService.GetOverdueTodos();
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(ownerId))
+        {
+            return TypedResults.Forbid();
+        }
+
+        var todos = await todoService.GetOverdueTodos(ownerId);
         return TypedResults.Ok(todos);
     }
 
-    // get todo by id
-    public static async Task<Results<Ok<Todo>, NotFound>> GetTodo(int id, ITodoService todoService)
+    // get todo by id — returns 403 if owned by a different user
+    public static async Task<Results<Ok<Todo>, NotFound, ForbidHttpResult>> GetTodo(
+        int id,
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
-        var todo = await todoService.Find(id);
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
 
-        if (todo != null)
+        if (string.IsNullOrEmpty(ownerId))
         {
-            return TypedResults.Ok(todo);
+            return TypedResults.Forbid();
         }
 
-        return TypedResults.NotFound();
+        var todo = await todoService.Find(id);
+
+        if (todo is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (todo.OwnerId != ownerId)
+        {
+            return TypedResults.Forbid();
+        }
+
+        return TypedResults.Ok(todo);
     }
 
-    // create todo
-    public static async Task<Created<Todo>> CreateTodo(TodoDto todo, ITodoService todoService)
+    // create todo — sets OwnerId from authenticated user's sub claim
+    public static async Task<Results<Created<Todo>, ForbidHttpResult>> CreateTodo(
+        TodoDto todo,
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(ownerId))
+        {
+            return TypedResults.Forbid();
+        }
+
         var newTodo = new Todo
         {
             Title = todo.Title,
             Description = todo.Description,
             IsDone = todo.IsDone,
             DueDate = todo.DueDate,
-            Priority = todo.Priority
+            Priority = todo.Priority,
+            OwnerId = ownerId
         };
 
         await todoService.Add(newTodo);
@@ -161,38 +219,71 @@ public static class TodoEndpointsV2
         return TypedResults.Created($"/todos/v2/{newTodo.Id}", newTodo);
     }
 
-    // update todo
-    public static async Task<Results<Ok<Todo>, NotFound>> UpdateTodo(UpdateTodoDto todo, int id, ITodoService todoService)
+    // update todo — returns 403 if owned by a different user
+    public static async Task<Results<Ok<Todo>, NotFound, ForbidHttpResult>> UpdateTodo(
+        UpdateTodoDto todo,
+        int id,
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
+
+        if (string.IsNullOrEmpty(ownerId))
+        {
+            return TypedResults.Forbid();
+        }
+
         var existingTodo = await todoService.Find(id);
 
-        if (existingTodo != null)
+        if (existingTodo is null)
         {
-            existingTodo.Title = todo.Title;
-            existingTodo.Description = todo.Description;
-            existingTodo.IsDone = todo.IsDone;
-            existingTodo.DueDate = todo.DueDate;
-            existingTodo.Priority = todo.Priority;
-
-            await todoService.Update(existingTodo);
-
-            return TypedResults.Ok(existingTodo);
+            return TypedResults.NotFound();
         }
 
-        return TypedResults.NotFound();
+        if (existingTodo.OwnerId != ownerId)
+        {
+            return TypedResults.Forbid();
+        }
+
+        existingTodo.Title = todo.Title;
+        existingTodo.Description = todo.Description;
+        existingTodo.IsDone = todo.IsDone;
+        existingTodo.DueDate = todo.DueDate;
+        existingTodo.Priority = todo.Priority;
+
+        await todoService.Update(existingTodo);
+
+        return TypedResults.Ok(existingTodo);
     }
 
-    // delete todo
-    public static async Task<Results<NoContent, NotFound>> DeleteTodo(int id, ITodoService todoService)
+    // delete todo — returns 403 if owned by a different user
+    public static async Task<Results<NoContent, NotFound, ForbidHttpResult>> DeleteTodo(
+        int id,
+        ClaimsPrincipal user,
+        ITodoService todoService)
     {
-        var todo = await todoService.Find(id);
+        var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? user.FindFirstValue("sub");
 
-        if (todo != null)
+        if (string.IsNullOrEmpty(ownerId))
         {
-            await todoService.Remove(todo);
-            return TypedResults.NoContent();
+            return TypedResults.Forbid();
         }
 
-        return TypedResults.NotFound();
+        var todo = await todoService.Find(id);
+
+        if (todo is null)
+        {
+            return TypedResults.NotFound();
+        }
+
+        if (todo.OwnerId != ownerId)
+        {
+            return TypedResults.Forbid();
+        }
+
+        await todoService.Remove(todo);
+        return TypedResults.NoContent();
     }
 }
