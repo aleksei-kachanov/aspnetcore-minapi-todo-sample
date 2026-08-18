@@ -12,10 +12,9 @@
 #   - project_symphony/.env        (contains MISTRAL_API_KEY)
 #
 # Runtime flags documented here (discovered during live runs on this repo):
-#   SYMPHONY_TOOL_ADAPTER=kiro            must be explicit — no default
+#   NOTE: SYMPHONY_TOOL_ADAPTER is retired (Spec 145) — raises RuntimeConfigurationError
 #   SYMPHONY_GATE_MODE=observe            waive S4 review blocks locally
 #   SYMPHONY_STALL_EMPTY_TOOL=10          prevent premature Kiro session kills
-#   SYMPHONY_KIRO_SESSION_REUSE=false     avoid stale session returning empty turns
 #   SYMPHONY_PARALLEL_REVIEWERS=true      all 4 reviewers concurrently → -200s S4
 #   SYMPHONY_ENV=local                    required for non-enforce gate mode
 # ─────────────────────────────────────────────────────────────────────────────
@@ -57,8 +56,6 @@ cd "$SYMPHONY_DIR"
 
 GITHUB_TOKEN="$GITHUB_TOKEN" \
 SYMPHONY_SOURCE_ROOT="$SOURCE_ROOT" \
-SYMPHONY_TOOL_ADAPTER=kiro \
-SYMPHONY_KIRO_PROFILE_ROOT="$SYMPHONY_DIR" \
 SYMPHONY_DELIVERY_MODE="$DELIVERY_MODE" \
 SYMPHONY_AUTO_MERGE=false \
 SYMPHONY_COLLECT_MODE=live \
@@ -66,7 +63,6 @@ SYMPHONY_ENV=local \
 SYMPHONY_GATE_MODE=observe \
 SYMPHONY_STALL_EMPTY_TOOL=10 \
 SYMPHONY_PROFILE=mistral-fast \
-SYMPHONY_KIRO_SESSION_REUSE=false \
 SYMPHONY_PARALLEL_REVIEWERS=true \
 SYMPHONY_CONTROLLER_LABELS=symphony-run \
 SYMPHONY_CONTROLLER_POLL_INTERVAL=30 \
