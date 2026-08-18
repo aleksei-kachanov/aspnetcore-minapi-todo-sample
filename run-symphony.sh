@@ -64,6 +64,8 @@ SYMPHONY_GATE_MODE=observe \
 SYMPHONY_STALL_EMPTY_TOOL=10 \
 SYMPHONY_PROFILE=mistral-fast \
 SYMPHONY_PARALLEL_REVIEWERS=true \
+SYMPHONY_CONTROLLER_OWNER=aleksei-kachanov \
+SYMPHONY_CONTROLLER_REPO=aspnetcore-minapi-todo-sample \
 SYMPHONY_CONTROLLER_LABELS=symphony-run \
 SYMPHONY_CONTROLLER_POLL_INTERVAL=30 \
 uv run python bin/symphony-controller.py
