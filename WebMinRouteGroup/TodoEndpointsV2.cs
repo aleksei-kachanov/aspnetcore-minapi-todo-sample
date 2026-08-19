@@ -63,7 +63,8 @@ public static class TodoEndpointsV2
         string? sortBy = null,
         string? order = null,
         int page = 1,
-        int size = 20)
+        int size = 20,
+        string? search = null)
     {
         var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? user.FindFirstValue("sub");
@@ -114,7 +115,8 @@ public static class TodoEndpointsV2
             SortBy = sortBy,
             Order = order,
             Page = page,
-            Size = size
+            Size = size,
+            Search = search
         };
 
         try

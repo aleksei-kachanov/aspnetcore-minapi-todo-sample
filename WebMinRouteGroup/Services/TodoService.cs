@@ -118,6 +118,18 @@ public class TodoService : ITodoService
             query = query.Where(t => t.DueDate >= dueAfter);
         }
 
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            // Escape backslash first, then LIKE special chars % and _.
+            // Pass the escape character to EF Core so the provider uses a parameterised LIKE.
+            var escaped = queryParams.Search
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+            var pattern = $"%{escaped}%";
+            query = query.Where(t => EF.Functions.Like(t.Title, pattern, "\\"));
+        }
+
         // --- Sorting ---
         var sortBy = queryParams.SortBy?.ToLowerInvariant();
         var descending = string.Equals(queryParams.Order, "desc", StringComparison.OrdinalIgnoreCase);
