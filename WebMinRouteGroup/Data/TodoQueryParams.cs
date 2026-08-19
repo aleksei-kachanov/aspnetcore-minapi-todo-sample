@@ -14,6 +14,9 @@ public class TodoQueryParams
     /// <summary>Include tasks with DueDate on or after this date (ISO 8601).</summary>
     public DateTime? DueAfter { get; set; }
 
+    /// <summary>Full-text search term matched against the Title field (case-insensitive substring match).</summary>
+    public string? Search { get; set; }
+
     /// <summary>Field to sort by: dueDate | priority | createdAt | title. Default: createdAt.</summary>
     public string? SortBy { get; set; }
 

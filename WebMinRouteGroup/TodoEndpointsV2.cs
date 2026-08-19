@@ -62,6 +62,7 @@ public static class TodoEndpointsV2
         DateTime? dueAfter = null,
         string? sortBy = null,
         string? order = null,
+        string? search = null,
         int page = 1,
         int size = 20)
     {
@@ -113,6 +114,7 @@ public static class TodoEndpointsV2
             DueAfter = dueAfter,
             SortBy = sortBy,
             Order = order,
+            Search = search,
             Page = page,
             Size = size
         };
