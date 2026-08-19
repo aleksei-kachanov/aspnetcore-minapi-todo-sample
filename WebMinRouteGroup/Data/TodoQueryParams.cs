@@ -25,4 +25,7 @@ public class TodoQueryParams
 
     /// <summary>Number of items per page. Default: 20. Maximum: 100.</summary>
     public int Size { get; set; } = 20;
+
+    /// <summary>Case-insensitive substring search against the todo title. Treated as a literal search term.</summary>
+    public string? Search { get; set; }
 }
