@@ -52,8 +52,8 @@ public static class TodoEndpointsV2
         return group;
     }
 
-    // get all todos with optional filter / sort / pagination — scoped to authenticated user
-    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ForbidHttpResult>> GetAllTodos(
+    // get all todos with optional filter / sort / pagination / search — scoped to authenticated user
+    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ProblemHttpResult, ForbidHttpResult>> GetAllTodos(
         ClaimsPrincipal user,
         ITodoService todoService,
         bool? isDone = null,
@@ -63,7 +63,8 @@ public static class TodoEndpointsV2
         string? sortBy = null,
         string? order = null,
         int page = 1,
-        int size = 20)
+        int size = 20,
+        string? search = null)
     {
         var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? user.FindFirstValue("sub");
@@ -71,6 +72,14 @@ public static class TodoEndpointsV2
         if (string.IsNullOrEmpty(ownerId))
         {
             return TypedResults.Forbid();
+        }
+
+        // Validate search length — return 400 Problem before calling the service
+        if (search is not null && search.Length > 200)
+        {
+            return TypedResults.Problem(
+                detail: "The search parameter must not exceed 200 characters.",
+                statusCode: StatusCodes.Status400BadRequest);
         }
 
         // Validate sortBy
@@ -114,7 +123,8 @@ public static class TodoEndpointsV2
             SortBy = sortBy,
             Order = order,
             Page = page,
-            Size = size
+            Size = size,
+            Search = search
         };
 
         try
