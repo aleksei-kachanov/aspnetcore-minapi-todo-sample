@@ -53,7 +53,7 @@ public static class TodoEndpointsV2
     }
 
     // get all todos with optional filter / sort / pagination / search — scoped to authenticated user
-    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ProblemHttpResult, ForbidHttpResult>> GetAllTodos(
+    public static async Task<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ForbidHttpResult>> GetAllTodos(
         ClaimsPrincipal user,
         ITodoService todoService,
         bool? isDone = null,
@@ -74,12 +74,10 @@ public static class TodoEndpointsV2
             return TypedResults.Forbid();
         }
 
-        // Validate search length — return 400 Problem before calling the service
+        // Validate search length — return 400 before calling the service
         if (search is not null && search.Length > 200)
         {
-            return TypedResults.Problem(
-                detail: "The search parameter must not exceed 200 characters.",
-                statusCode: StatusCodes.Status400BadRequest);
+            return TypedResults.BadRequest("The search parameter must not exceed 200 characters.");
         }
 
         // Validate sortBy
