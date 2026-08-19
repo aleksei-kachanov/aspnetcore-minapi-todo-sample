@@ -33,7 +33,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
-        var notFoundResult = (NotFound) result.Result;
+        var notFoundResult = (NotFound)result.Result;
 
         Assert.NotNull(notFoundResult);
     }
@@ -66,7 +66,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Ok<PagedResult<Todo>>, BadRequest<string>, ForbidHttpResult>>(result);
 
-        var okResult = (Ok<PagedResult<Todo>>) result.Result;
+        var okResult = (Ok<PagedResult<Todo>>)result.Result;
         Assert.NotNull(okResult.Value);
         Assert.NotEmpty(okResult.Value.Items);
         Assert.Collection(okResult.Value.Items, todo1 =>
@@ -101,7 +101,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Ok<List<Todo>>, ForbidHttpResult>>(result);
 
-        var okResult = (Ok<List<Todo>>) result.Result;
+        var okResult = (Ok<List<Todo>>)result.Result;
         Assert.NotNull(okResult.Value);
         Assert.NotEmpty(okResult.Value);
         Assert.Collection(okResult.Value, todo1 =>
@@ -133,7 +133,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
-        var okResult = (Ok<Todo>) result.Result;
+        var okResult = (Ok<Todo>)result.Result;
 
         Assert.NotNull(okResult.Value);
         Assert.Equal(1, okResult.Value.Id);
@@ -165,7 +165,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Created<Todo>, ForbidHttpResult>>(result);
 
-        var createdResult = (Created<Todo>) result.Result;
+        var createdResult = (Created<Todo>)result.Result;
 
         Assert.NotNull(createdResult);
         Assert.NotNull(createdResult.Location);
@@ -207,7 +207,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<Ok<Todo>, NotFound, ForbidHttpResult>>(result);
 
-        var okResult = (Ok<Todo>) result.Result;
+        var okResult = (Ok<Todo>)result.Result;
 
         Assert.NotNull(okResult);
 
@@ -238,7 +238,7 @@ public class TodoMoqTests
         //Assert
         Assert.IsType<Results<NoContent, NotFound, ForbidHttpResult>>(result);
 
-        var noContentResult = (NoContent) result.Result;
+        var noContentResult = (NoContent)result.Result;
 
         Assert.NotNull(noContentResult);
         Assert.Empty(todos);

@@ -20,7 +20,7 @@ public class TodoInMemoryTests
         //Assert
         Assert.IsType<Results<Ok<Todo>, NotFound>>(result);
 
-        var notFoundResult = (NotFound) result.Result;
+        var notFoundResult = (NotFound)result.Result;
 
         Assert.NotNull(notFoundResult);
     }
@@ -56,7 +56,7 @@ public class TodoInMemoryTests
 
         //Assert
         Assert.IsType<Ok<Todo[]>>(result);
-        
+
         Assert.NotNull(result.Value);
         Assert.NotEmpty(result.Value);
         Assert.Collection(result.Value, todo1 =>
