@@ -16,7 +16,8 @@
 #   SYMPHONY_GATE_MODE=observe            waive S4 review blocks locally
 #   SYMPHONY_STALL_EMPTY_TOOL=10          prevent premature Kiro session kills
 #   SYMPHONY_PARALLEL_REVIEWERS=true      all 4 reviewers concurrently → -200s S4
-#   SYMPHONY_ENV=local                    required for non-enforce gate mode
+#   SYMPHONY_ENV=local                    default; override for the target environment
+#   SYMPHONY_CHECKPOINT_PURPOSE=dev       optional purpose-specific DB/state suffix
 # ─────────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -45,6 +46,14 @@ GITHUB_TOKEN="${GITHUB_TOKEN:-$(gh auth token 2>/dev/null)}"
 DELIVERY_MODE="live"
 [[ "${1:-}" == "--dry-run" ]] && { DELIVERY_MODE="simulate"; echo "DRY RUN"; }
 
+# Keep local development as the safe default, but allow the caller to select
+# the execution environment/purpose without editing this launcher. The
+# checkpoint purpose may intentionally differ from the gate environment (for
+# example, a local observe run writing to a dedicated UAT rehearsal DB).
+RUN_ENV="${SYMPHONY_ENV:-local}"
+CHECKPOINT_PURPOSE="${SYMPHONY_CHECKPOINT_PURPOSE:-$RUN_ENV}"
+RUN_GATE_MODE="${SYMPHONY_GATE_MODE:-observe}"
+
 # ── Source root = this repo ───────────────────────────────────────────────────
 SOURCE_ROOT="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 echo "Source: $(git -C "$SOURCE_ROOT" log --oneline -1)"
@@ -59,8 +68,9 @@ SYMPHONY_SOURCE_ROOT="$SOURCE_ROOT" \
 SYMPHONY_DELIVERY_MODE="$DELIVERY_MODE" \
 SYMPHONY_AUTO_MERGE=false \
 SYMPHONY_COLLECT_MODE=live \
-SYMPHONY_ENV=local \
-SYMPHONY_GATE_MODE=observe \
+SYMPHONY_ENV="$RUN_ENV" \
+SYMPHONY_CHECKPOINT_PURPOSE="$CHECKPOINT_PURPOSE" \
+SYMPHONY_GATE_MODE="$RUN_GATE_MODE" \
 SYMPHONY_STALL_EMPTY_TOOL=10 \
 SYMPHONY_PROFILE=mistral-fast \
 SYMPHONY_PARALLEL_REVIEWERS=true \
@@ -71,6 +81,8 @@ SYMPHONY_INFERENCE_CREDENTIAL_REF=mistral \
 SYMPHONY_HARNESS_PROVIDER=kiro \
 SYMPHONY_KIRO_PROFILE_ROOT="$SYMPHONY_DIR" \
 SYMPHONY_KIRO_SESSION_REUSE=false \
+SYMPHONY_CONSTRUCTION_AUTONOMY_MODE=autonomous \
+SYMPHONY_OPERATOR_ID=controller \
 SYMPHONY_CONTROLLER_OWNER=aleksei-kachanov \
 SYMPHONY_CONTROLLER_REPO=aspnetcore-minapi-todo-sample \
 SYMPHONY_CONTROLLER_LABELS=symphony-run \
