@@ -118,6 +118,15 @@ public class TodoService : ITodoService
             query = query.Where(t => t.DueDate >= dueAfter);
         }
 
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            // Case-insensitive substring match on Title.
+            // ToLower() is translated by the SQLite EF Core provider to the LOWER() SQL function,
+            // producing: WHERE lower(Title) LIKE lower('%term%') ESCAPE '\'
+            var term = queryParams.Search.ToLower();
+            query = query.Where(t => t.Title.ToLower().Contains(term));
+        }
+
         // --- Sorting ---
         var sortBy = queryParams.SortBy?.ToLowerInvariant();
         var descending = string.Equals(queryParams.Order, "desc", StringComparison.OrdinalIgnoreCase);
