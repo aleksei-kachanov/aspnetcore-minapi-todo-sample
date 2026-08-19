@@ -118,6 +118,14 @@ public class TodoService : ITodoService
             query = query.Where(t => t.DueDate >= dueAfter);
         }
 
+        // --- Search filter ---
+        // EF Core translates .Contains() to a SQL LIKE '%term%' which is case-insensitive on SQLite.
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            var search = queryParams.Search;
+            query = query.Where(t => t.Title.Contains(search));
+        }
+
         // --- Sorting ---
         var sortBy = queryParams.SortBy?.ToLowerInvariant();
         var descending = string.Equals(queryParams.Order, "desc", StringComparison.OrdinalIgnoreCase);
@@ -142,6 +150,7 @@ public class TodoService : ITodoService
         };
 
         // --- Pagination ---
+        // Count is computed after all filters (including search) so pagination metadata reflects matched results.
         var total = await query.CountAsync();
         var items = await query
             .Skip((page - 1) * size)
