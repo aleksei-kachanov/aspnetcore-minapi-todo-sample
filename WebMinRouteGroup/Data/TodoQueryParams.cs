@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace WebMinRouteGroup.Data;
 
 public class TodoQueryParams
@@ -25,4 +27,8 @@ public class TodoQueryParams
 
     /// <summary>Number of items per page. Default: 20. Maximum: 100.</summary>
     public int Size { get; set; } = 20;
+
+    /// <summary>Full-text search term matched against the todo Title (case-insensitive substring match). Maximum 200 characters.</summary>
+    [MaxLength(200)]
+    public string? Search { get; set; }
 }

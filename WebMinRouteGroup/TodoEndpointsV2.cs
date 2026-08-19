@@ -63,7 +63,8 @@ public static class TodoEndpointsV2
         string? sortBy = null,
         string? order = null,
         int page = 1,
-        int size = 20)
+        int size = 20,
+        string? search = null)
     {
         var ownerId = user.FindFirstValue(ClaimTypes.NameIdentifier)
                       ?? user.FindFirstValue("sub");
@@ -71,6 +72,12 @@ public static class TodoEndpointsV2
         if (string.IsNullOrEmpty(ownerId))
         {
             return TypedResults.Forbid();
+        }
+
+        // Validate search length
+        if (search is not null && search.Length > 200)
+        {
+            return TypedResults.BadRequest("Search term must not exceed 200 characters.");
         }
 
         // Validate sortBy
@@ -114,7 +121,8 @@ public static class TodoEndpointsV2
             SortBy = sortBy,
             Order = order,
             Page = page,
-            Size = size
+            Size = size,
+            Search = search
         };
 
         try
