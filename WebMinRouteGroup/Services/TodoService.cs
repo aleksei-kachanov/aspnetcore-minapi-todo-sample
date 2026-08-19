@@ -104,6 +104,18 @@ public class TodoService : ITodoService
             query = query.Where(t => t.Priority == priorityValue);
         }
 
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            // Escape backslash first, then LIKE special characters % and _.
+            // Pass the escape character '\\' so the ORM/SQLite provider treats them as literals.
+            var escaped = queryParams.Search
+                .Replace("\\", "\\\\")
+                .Replace("%", "\\%")
+                .Replace("_", "\\_");
+            var pattern = $"%{escaped}%";
+            query = query.Where(t => EF.Functions.Like(t.Title, pattern, "\\"));
+        }
+
         if (queryParams.DueBefore.HasValue)
         {
             // Include tasks due on or before the given date (end of that day, UTC)
