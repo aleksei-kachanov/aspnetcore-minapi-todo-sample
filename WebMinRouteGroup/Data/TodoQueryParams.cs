@@ -20,6 +20,9 @@ public class TodoQueryParams
     /// <summary>Sort direction: asc | desc. Default: desc (newest first for createdAt).</summary>
     public string? Order { get; set; }
 
+    /// <summary>Case-insensitive substring match against the todo title.</summary>
+    public string? Search { get; set; }
+
     /// <summary>1-based page number. Default: 1.</summary>
     public int Page { get; set; } = 1;
 
