@@ -25,4 +25,7 @@ public class TodoQueryParams
 
     /// <summary>Number of items per page. Default: 20. Maximum: 100.</summary>
     public int Size { get; set; } = 20;
+
+    /// <summary>Full-text search keyword matched against Title (case-insensitive, max 200 chars).</summary>
+    public string? Search { get; set; }
 }

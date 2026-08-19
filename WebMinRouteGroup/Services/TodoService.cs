@@ -118,6 +118,17 @@ public class TodoService : ITodoService
             query = query.Where(t => t.DueDate >= dueAfter);
         }
 
+        if (!string.IsNullOrEmpty(queryParams.Search))
+        {
+            if (queryParams.Search.Length > 200)
+            {
+                throw new ArgumentException("Search keyword must not exceed 200 characters.");
+            }
+            // EF.Functions.Like translates to a SQLite LIKE, which is case-insensitive for ASCII by default.
+            var pattern = $"%{queryParams.Search}%";
+            query = query.Where(t => EF.Functions.Like(t.Title, pattern));
+        }
+
         // --- Sorting ---
         var sortBy = queryParams.SortBy?.ToLowerInvariant();
         var descending = string.Equals(queryParams.Order, "desc", StringComparison.OrdinalIgnoreCase);
